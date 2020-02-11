@@ -10,34 +10,40 @@ linear(x :: Real) = x
 η = 0.95
 epochs = 10000
 
-inputs  = 2
-neurons = 5
-outputs = 1
+inputs  = 3
+neurons = 2
+outputs = 2
 
 bₕ = hidden_bias = zeros(1, neurons)
 bₒ = output_bias = zeros(1, outputs)
-
+bₕ = [0.5 0.5]
+bₒ = [0.5 0.5]
 wₕ = hidden_layer = rand(inputs,  neurons)
 wₒ = output_layer = rand(neurons, outputs)
-
-inputs =  [0 0;
-           0 1;
-           1 0;
-           1 1]
-targets = [0; 1; 1;  0];
+wₕ = [0.1 0.2;
+      0.3 0.4;
+      0.5 0.6]
+wₒ = [0.7 0.8;
+      0.9 0.1]
+inputs =  [1 4 5]
+targets = [0.1 0.05]
 
 for i=1:epochs
   global wₕ, wₒ, bₕ, bₒ
   j = rand(1:size(inputs, 1))
   x = reshape( inputs[j,:], 1, :)
   y = reshape(targets[j,:], 1, :)
-  
+  #@show x
   ### Feed forward ###
-  x̄ = ∑(x * wₕ .+ bₕ; dims=1)
+  x̄ = ∑(x * wₕ; dims=1) .+ bₕ
   x̂ = σ.(x̄)
-                                               
-  ȳ = ∑(x̂ * wₒ .+ bₒ; dims=1)
+  #@show x̄
+  #@show x̂
+
+  ȳ = ∑(x̂ * wₒ; dims=1) .+ bₒ
   ŷ = σ.(ȳ)
+  #@show ȳ
+  #@show ŷ
 
   ε = 0.5*(y - ŷ).^2
   E = loss = ∑(ε)
@@ -49,24 +55,25 @@ for i=1:epochs
   #@show size(ŷ)
   ∂ȳ_∂bₒ = 1.
   ∂ȳ_∂wₒ = reshape(x̂, :, 1)
-  ∂ŷ_∂ȳ  = σ.(ŷ) .* (1 .- σ.(ŷ))
+  ∂ŷ_∂ȳ  = ŷ .* (1 .- ŷ)
   ∂E_∂ŷ  = -(y - ŷ)
-  #@show size(∂ȳ_∂wₒ)
-  #@show size(∂ŷ_∂ȳ)
-  #@show size(∂E_∂ŷ)
+  #@show ∂ȳ_∂wₒ
+  #@show ∂ŷ_∂ȳ
+  #@show ∂E_∂ŷ
   #@show size(wₒ)
   #@show size(bₒ)
   ∂E_∂wₒ = ∂ȳ_∂wₒ .* ∂ŷ_∂ȳ .* ∂E_∂ŷ 
   ∂E_∂bₒ = ∂ȳ_∂bₒ .* ∂ŷ_∂ȳ .* ∂E_∂ŷ 
+  #@show ∂E_∂wₒ
   #@show size(∂E_∂wₒ)
   #@show size(∂E_∂bₒ)
   wₒ    -= η * ∂E_∂wₒ
   bₒ    -=2η * ∂E_∂bₒ
   #println("========")
   ∂ȳ_∂x̂  = wₒ
-  ∂ŷ_∂ȳ  = σ.(ŷ) .* (1 .- σ.(ŷ))
+  ∂ŷ_∂ȳ  = ŷ .* (1 .- ŷ)
   ∂E_∂x̂  = ∑(∂ŷ_∂ȳ .* ∂ȳ_∂x̂)
-  ∂x̂_∂x̄  = σ.(x̂) .* (1 .- σ.(x̂))
+  ∂x̂_∂x̄  = x̂ .* (1 .- x̂)
   ∂x̄_∂bₕ = 1.
   ∂x̄_∂wₕ = reshape(x, :, 1)
   #@show size(∂ȳ_∂x̂)
