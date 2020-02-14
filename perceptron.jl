@@ -26,10 +26,10 @@ for i=1:epochs
   y = reshape(targets[j,:], 1, :)
 
   ### Feed forward ###
-  x̄ = ∑(x * wₕ; dims=1) .+ bₕ
+  x̄ = x * wₕ .+ bₕ
   x̂ = σ.(x̄)
   
-  ȳ = ∑(x̂ * wₒ; dims=1) .+ bₒ
+  ȳ = x̂ * wₒ .+ bₒ
   ŷ = σ.(ȳ)
   
   E = ∑(0.5*(y - ŷ).^2)
