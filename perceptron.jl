@@ -3,6 +3,7 @@ Random.seed!(0)
 
 sigmoid(x :: Real) = one(x) / (one(x) + exp(-x))
 linear(x :: Real)  = x
+ReLU(x :: Real) = max(0, x)
 σ = sigmoid
 ∑ = sum
 
