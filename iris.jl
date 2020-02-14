@@ -153,8 +153,8 @@ inputs = Float64[
  5.9 3.0 5.1 1.8;#Iris-virginica
 ]
 targets = vcat(
-	repeat([1. 0 0], 50, 1),
-	repeat([0 1. 0], 50, 1),
-	repeat([0 0 1.], 50, 1))
+	repeat([1. 0  0 ], 50, 1),
+	repeat([0  1. 0 ], 50, 1),
+	repeat([0  0  1.], 50, 1))
 @show size(inputs)
 @show size(targets)
