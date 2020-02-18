@@ -54,7 +54,7 @@ for i=1:epochs
   
   ∂x̄_∂bₕ = eₕ
   ∂x̄_∂wₕ = x  |> transpose
-  ∂x̂_∂x̄  = x̂ .|> (x̂i) -> x̂i > 0. ? 1. : 0.#x̂ .* (1 .- x̂)
+  ∂x̂_∂x̄  = x̂ .* (1 .- x̂)
   ∂ȳ_∂x̂  = wₒ |> transpose
 
   ∂E_∂x̂  = ∂ȳ_∂x̂ * ∂E_∂ȳ
