@@ -156,5 +156,3 @@ targets = vcat(
 	repeat([1. 0  0 ], 50, 1),
 	repeat([0  1. 0 ], 50, 1),
 	repeat([0  0  1.], 50, 1))
-@show size(inputs)
-@show size(targets)
