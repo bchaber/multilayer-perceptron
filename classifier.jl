@@ -69,10 +69,12 @@ for i=1:epochs
 end
 
 test_set = 1:data_size
+println("FINAL", "\t", test(wb))
+
 for j=1:data_size
   x = reshape( inputs[j,:], :, 1)
   y = reshape(targets[j,:], :, 1)
   ŷ = feedforward!(nn, x)
+  ŷ = round.(ŷ ./ maximum(ŷ); digits=1)
   println(y, " <==> ", ŷ)
 end
-println("FINAL", "\t", test(wb))
