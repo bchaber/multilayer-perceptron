@@ -8,12 +8,11 @@ batch_size     = 1
 input_neurons  = 2
 hidden_neurons = 10
 output_neurons = 1
-
-include("nn.jl")
 wb = zeros(hidden_neurons*input_neurons  + hidden_neurons +
            output_neurons*hidden_neurons + output_neurons)
 ∂E = zeros(hidden_neurons*input_neurons  + hidden_neurons +
            output_neurons*hidden_neurons + output_neurons)
+
 include("subviews.jl")
 wₕ, bₕ, wₒ, bₒ = subviews(wb,
   (hidden_neurons, input_neurons),  (hidden_neurons,1),
@@ -21,6 +20,8 @@ wₕ, bₕ, wₒ, bₒ = subviews(wb,
 ∂wₕ, ∂bₕ, ∂wₒ, ∂bₒ = subviews(∂E,
   (hidden_neurons, input_neurons),  (hidden_neurons,1),
   (output_neurons, hidden_neurons), (output_neurons,1));
+
+include("nn.jl")
 hidden = FullyConnectedLayer{_tanh}(wₕ, bₕ, ∂wₕ, ∂bₕ)
 output = FullyConnectedLayer{_linear}(wₒ, bₒ, ∂wₒ, ∂bₒ)
 nn = NeuralNetwork(hidden, output)
@@ -28,8 +29,8 @@ wₕ .= randn(hidden_neurons, input_neurons)
 wₒ .= randn(output_neurons, hidden_neurons)
 
 include("optimizers.jl")
-#optimizer = Adagrad(η, 1e-9, length(wb))
 optimizer = BFGS(length(wb))
+
 include("datasets/hagan_smart_sensor.jl")
 test_size  = 10
 train_size = 57

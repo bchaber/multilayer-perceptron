@@ -1,29 +1,29 @@
 using LinearAlgebra
 abstract type DescentMethod end
-
+# Gradient Descent ####################
 struct GradientDescent <: DescentMethod
   α
 end
-
+# Broyden–Fletcher–Goldfarb–Shanno ####
 mutable struct BFGS <: DescentMethod
   Q
 end
 BFGS(n::Integer) = BFGS(Matrix(1.0I, n, n))
-
+# Momentum ############################
 mutable struct Momentum <: DescentMethod
   α # learning rate
   β # momentum decay
   v # momentum
 end
 Momentum(α, β, n::Integer) = Momentum(α, β, zeros(n))
-
+# Adagrad #############################
 mutable struct Adagrad <: DescentMethod
   α # learning rate
   ε # small value
   s # sum of squared gradient
 end
 Adagrad(α, ε, n::Integer) = Adagrad(α, ε, zeros(n))
-
+# RMSProp #############################
 mutable struct RMSProp <: DescentMethod
   α # learning rate
   γ # decay
