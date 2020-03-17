@@ -78,8 +78,8 @@ diagonal(v::Matrix{Float}) = diagm(0 => vec(v))
 ∂activation(fc::FullyConnectedLayer{sigmoid})= (@. fc.û * (1.0 - fc.û)) |> diagonal
 ∂activation(fc::FullyConnectedLayer{tanh})   = (@. 1.0 - fc.û^2) |> diagonal
 ∂activation(fc::FullyConnectedLayer{linear}) =  fc.ûū |> eye
-∂activation(fc::FullyConnectedLayer{ReLU})   =  fc.û  |> diagonal .|> (ûi) -> ûi > 0. ? 1. : 0.
-∂activation(fc::FullyConnectedLayer{softmax})= (fc.û  |> diagonal).- fc.û * (fc.û |> transpose)
+∂activation(fc::FullyConnectedLayer{ReLU})   =  fc.û |> diagonal .|> (ûi) -> ûi > 0. ? 1. : 0.
+∂activation(fc::FullyConnectedLayer{softmax})= (fc.û |> diagonal).- fc.û * (fc.û |> transpose)
 
 
 function backpropagate!(fc::FullyConnectedLayer{T}) where T
