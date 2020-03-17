@@ -1,4 +1,5 @@
-using LinearAlgebra
+import LinearAlgebra: I
+import Base.MathConstants: φ
 abstract type DescentMethod end
 # Gradient Descent ####################
 struct GradientDescent <: DescentMethod
