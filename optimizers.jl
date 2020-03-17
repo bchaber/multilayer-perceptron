@@ -73,29 +73,53 @@ function bracket_minimum(f, x=0; s=1e-2, k=2.0)
   end
 end
 
-function bisection(f′, a, b; ε=5e-9)
-  if a > b; a,b = b,a; end # ensure a < b
-  ya, yb = f′(a), f′(b)
-  if ya == 0; b = a; end
-  if yb == 0; a = b; end
-  while b - a > ε
-    x = (a+b)/2
-    y = f′(x)
-    if y == 0
-      a, b = x, x
-    elseif sign(y) == sign(ya)
-      a=x
+function fibonacci_search(f, a, b, n; ε=0.01)
+  s = (1 - √5)/(1 + √5)
+  ρ = 1 / (φ*(1-s^(n+1))/(1-s^n))
+  d = ρ*b + (1-ρ)*a
+  yd = f(d)
+  for i in 1:n-1
+    if i == n-1
+      c = ε*a + (1-ε)*d
     else
-      b=x
+      c = ρ*a + (1-ρ)*b
+    end
+    yc = f(c)
+    if yc < yd
+      b, d, yd = d, c, yc
+    else
+      a, b = b, c
+    end
+    ρ = 1 / (φ*(1-s^(n-i+1))/(1-s^(n-i)))
+  end
+  return a < b ? (a, b) : (b, a)
+end
+
+function golden_section_search(f, a, b, n)
+  ρ = φ - 1
+  d = ρ * b + (1 - ρ)*a
+  yd = f(d)
+  for i = 1:n-1
+    c = ρ*a + (1 - ρ)*b
+    yc = f(c)
+    if yc < yd
+      b, d, yd = d, c, yc
+    else
+      a, b = b, c
     end
   end
-  return a/2 + b/2
+  return a < b ? (a, b) : (b, a)
+end
+
+function minimize(objective, a, b)
+  x, y = golden_section_search(objective, a, b, 50)
+  x/2 + y/2
 end
 
 function line_search(f, x, d)
   objective = α -> f(x + α*d)
   a, b = bracket_minimum(objective)
-  α = bisection(objective, a, b)
+  α = minimize(objective, a, b)
   return x + α*d
 end
 
