@@ -69,4 +69,10 @@ for i=1:epochs
 end
 
 test_set = 1:data_size
+for j=1:data_size
+  x = reshape( inputs[j,:], :, 1)
+  y = reshape(targets[j,:], :, 1)
+  ŷ = feedforward!(nn, x)
+  println(y, " <==> ", ŷ)
+end
 println("FINAL", "\t", test(wb))
