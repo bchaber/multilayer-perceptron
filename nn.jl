@@ -1,3 +1,4 @@
+import LinearAlgebra: diagm
 Float = Float64
 abstract type Layer end
 abstract type ActivationFunction end
@@ -13,43 +14,58 @@ linear(x :: Real)  = x
 ReLU(x :: Real) = max(0, x)
 tanh(x :: Real) = 2 / (1 + exp(-2x)) - 1
 
+abstract type LossFunction end
+abstract type mean_squared_loss <: LossFunction end
+abstract type cross_entropy_loss <: LossFunction end
+
 struct FullyConnectedLayer{T <: ActivationFunction} <: Layer
-  w # weights
-  b # bias
-  u # input
-  ū # sum
-  û # output
-  # derivatives
-  ūb
-  ūw
-  ūu
-  ûū
-  Ew
-  Eb
+  w  :: AbstractMatrix{Float} # weights
+  b  :: AbstractMatrix{Float} # bias
+  u  :: Matrix{Float} # input
+  ū  :: Matrix{Float} # sum
+  û  :: Matrix{Float} # output
+  ūb :: Matrix{Float} # derivatives...
+  ūw :: Matrix{Float}
+  ūu :: Matrix{Float}
+  ûū :: Matrix{Float}
+  Ew :: AbstractMatrix{Float}
+  Eb :: AbstractMatrix{Float}
 end
 function FullyConnectedLayer{T}(w, b, Ew, Eb) where T
   n, m = size(w)
 
   FullyConnectedLayer{T}(w, b,
 	zeros(m,1), zeros(n,1), zeros(n,1),
-	zeros(n,1), zeros(1,m), zeros(m,n), zeros(n,1),
+	zeros(n,1), zeros(1,m), zeros(m,n), zeros(n,n),
 	Ew, Eb)
 end
 
-struct NeuralNetwork
+struct NeuralNetwork{T <: LossFunction}
   hidden :: Layer
   output :: Layer
 end
 
-function mean_squared_error(nn::NeuralNetwork, inputs, targets, ks)
+loss(nn::NeuralNetwork{mean_squared_loss}, y, ŷ)  = sum(0.5(y - ŷ).^2)
+loss(nn::NeuralNetwork{cross_entropy_loss}, y, ŷ) = sum(-y .* log.(ŷ))
+
+function loss(nn::NeuralNetwork{T}, inputs, targets, ks) where T
   Eₜ  = 0.
   for k = ks
     x   = reshape( inputs[k,:], :, 1)
     y   = reshape(targets[k,:], :, 1)
     ŷ   = feedforward!(nn, x)
-    Eₜ += sum(0.5(y - ŷ).^2)
+    Eₜ += loss(nn, y, ŷ)
   end
   return Eₜ/length(ks)
+end
+
+∂loss(nn::NeuralNetwork{mean_squared_loss}, y, ŷ)  = -(y - ŷ)
+∂loss(nn::NeuralNetwork{cross_entropy_loss}, y, ŷ) = -y ./ ŷ
+
+function feedforward!(fc::FullyConnectedLayer{T}, u) where T
+  fc.u .= u
+  fc.ū .= fc.w * u + fc.b
+  fc.û .= activation(fc)
 end
 
 function feedforward!(nn::NeuralNetwork, x)
@@ -57,46 +73,39 @@ function feedforward!(nn::NeuralNetwork, x)
   ŷ = feedforward!(nn.output, x̂)
 end
 
-function feedforward!(fc::FullyConnectedLayer{_tanh}, u)
-  fc.u .= u
-  fc.ū .= fc.w * u + fc.b
-  fc.û .= tanh.(fc.ū)
-end
+activation(fc::FullyConnectedLayer{_tanh})   = tanh.(fc.ū)
+activation(fc::FullyConnectedLayer{_linear}) = linear.(fc.ū)
+activation(fc::FullyConnectedLayer{_ReLU})   = ReLU.(fc.ū)
+activation(fc::FullyConnectedLayer{_softmax})= softmax(fc.ū)
 
-function feedforward!(fc::FullyConnectedLayer{_linear}, u)
-  fc.u .= u
-  fc.ū .= fc.w * u + fc.b
-  fc.û .= linear.(fc.ū)
-end
+eye(v::Matrix{Float}) = Matrix(1.0I, size(v))
+diagonal(v::Matrix{Float}) = diagm(0 => vec(v))
+∂activation(fc::FullyConnectedLayer{_tanh})   = 1. .- fc.û .^ 2 |> diagonal
+∂activation(fc::FullyConnectedLayer{_linear}) = fc.ûū |> eye
+∂activation(fc::FullyConnectedLayer{_ReLU})   = fc.û  |> diagonal .|> (ûi) -> ûi > 0. ? 1. : 0.
+∂activation(fc::FullyConnectedLayer{_softmax})=(fc.û  |> diagonal).- fc.û * (fc.û |> transpose)
 
-function backpropagate!(fc::FullyConnectedLayer{_tanh}, u)
+
+function backpropagate!(fc::FullyConnectedLayer{T}) where T
   fc.ūb .= ê = ones(size(fc.ūb))
   fc.ūw .= fc.u |> transpose
   fc.ūu .= fc.w |> transpose
-  fc.ûū .= 1.0 .- fc.û .^ 2
+  fc.ûū .= ∂activation(fc)
 end
 
-function backpropagate!(fc::FullyConnectedLayer{_linear}, u)
-  fc.ūb .= ê = ones(size(fc.ūb))
-  fc.ūw .= fc.u |> transpose
-  fc.ūu .= fc.w |> transpose
-  fc.ûū .= ê = ones(size(fc.ûū))
-end
-
-function backpropagate!(nn::NeuralNetwork, y)
-  backpropagate!(nn.output, y)
-  backpropagate!(nn.hidden, y)
+function backpropagate!(nn::NeuralNetwork{T}, y) where T
+  backpropagate!(nn.output)
+  backpropagate!(nn.hidden)
   ŷ = nn.output.û
-  E = sum(0.5(y - ŷ).^2)
   
   ŷȳ = nn.output.ûū
   ȳx̂ = nn.output.ūu
   x̂x̄ = nn.hidden.ûū
 
-  Eŷ  =-(y - ŷ)
+  Eŷ  = ∂loss(nn, y, ŷ)
   Eȳ  = ŷȳ * Eŷ
   Ex̂  = ȳx̂ * Eȳ
-  Ex̄  = Ex̂.* x̂x̄
+  Ex̄  = x̂x̄ * Ex̂
   
   ȳwₒ = nn.output.ūw
   ȳbₒ = nn.output.ūb

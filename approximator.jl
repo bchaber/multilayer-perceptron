@@ -24,7 +24,7 @@ wₕ, bₕ, wₒ, bₒ = subviews(wb,
 include("nn.jl")
 hidden = FullyConnectedLayer{_tanh}(wₕ, bₕ, ∂wₕ, ∂bₕ)
 output = FullyConnectedLayer{_linear}(wₒ, bₒ, ∂wₒ, ∂bₒ)
-nn = NeuralNetwork(hidden, output)
+nn = NeuralNetwork{mean_squared_loss}(hidden, output)
 wₕ .= randn(hidden_neurons, input_neurons)
 wₒ .= randn(output_neurons, hidden_neurons)
 
@@ -40,7 +40,7 @@ test_set   = setdiff(1:data_size, train_set)
 
 function test(wb′)
   wb .= wb′
-  mean_squared_error(nn, inputs, targets, test_set)
+  loss(nn, inputs, targets, test_set)
 end
 
 function train(wb′)
@@ -66,3 +66,6 @@ for i=1:epochs
   optimize!(wb)
   println(i, "\t", test(wb))
 end
+
+test_set = 1:data_size
+println("FINAL", "\t", test(wb))
