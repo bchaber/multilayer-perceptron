@@ -29,8 +29,8 @@ wₕ .= randn(hidden_neurons, input_neurons)
 wₒ .= randn(output_neurons, hidden_neurons)
 
 include("optimizers.jl")
-optimizer = BFGS(length(wb))
 
+optimizer = GradientDescent(η)
 include("datasets/hagan_smart_sensor.jl")
 test_size  = 10
 train_size = 57
