@@ -2,18 +2,11 @@ import LinearAlgebra: diagm
 Float = Float64
 abstract type Layer end
 abstract type ActivationFunction end
-abstract type _sigmoid <: ActivationFunction end
-abstract type _softmax <: ActivationFunction end
-abstract type _linear  <: ActivationFunction end
-abstract type _ReLU    <: ActivationFunction end
-abstract type _tanh    <: ActivationFunction end
-
-sigmoid(x :: Real) = one(x) / (one(x) + exp(-x))
-softmax(x :: Array{<:Real,2}) = exp.(x) ./ sum(exp.(x))
-linear(x :: Real)  = x
-ReLU(x :: Real) = max(0, x)
-tanh(x :: Real) = 2 / (1 + exp(-2x)) - 1
-
+abstract type sigmoid <: ActivationFunction end
+abstract type softmax <: ActivationFunction end
+abstract type linear  <: ActivationFunction end
+abstract type ReLU    <: ActivationFunction end
+abstract type tanh    <: ActivationFunction end
 abstract type LossFunction end
 abstract type mean_squared_loss <: LossFunction end
 abstract type cross_entropy_loss <: LossFunction end
@@ -73,17 +66,20 @@ function feedforward!(nn::NeuralNetwork, x)
   ŷ = feedforward!(nn.output, x̂)
 end
 
-activation(fc::FullyConnectedLayer{_tanh})   = tanh.(fc.ū)
-activation(fc::FullyConnectedLayer{_linear}) = linear.(fc.ū)
-activation(fc::FullyConnectedLayer{_ReLU})   = ReLU.(fc.ū)
-activation(fc::FullyConnectedLayer{_softmax})= softmax(fc.ū)
+
+activation(fc::FullyConnectedLayer{sigmoid})= (@. 1.0 / (1.0 + exp(-1.0fc.ū)))
+activation(fc::FullyConnectedLayer{tanh})   = (@. 2.0 / (1.0 + exp(-2.0fc.ū)) - 1.0)
+activation(fc::FullyConnectedLayer{linear}) =  fc.ū
+activation(fc::FullyConnectedLayer{ReLU})   = (@. max(0, fc.ū))
+activation(fc::FullyConnectedLayer{softmax})=  exp.(fc.ū) ./ sum(exp.(fc.ū))
 
 eye(v::Matrix{Float}) = Matrix(1.0I, size(v))
 diagonal(v::Matrix{Float}) = diagm(0 => vec(v))
-∂activation(fc::FullyConnectedLayer{_tanh})   = 1. .- fc.û .^ 2 |> diagonal
-∂activation(fc::FullyConnectedLayer{_linear}) = fc.ûū |> eye
-∂activation(fc::FullyConnectedLayer{_ReLU})   = fc.û  |> diagonal .|> (ûi) -> ûi > 0. ? 1. : 0.
-∂activation(fc::FullyConnectedLayer{_softmax})=(fc.û  |> diagonal).- fc.û * (fc.û |> transpose)
+∂activation(fc::FullyConnectedLayer{sigmoid})= (@. fc.û * (1.0 - fc.û)) |> diagonal
+∂activation(fc::FullyConnectedLayer{tanh})   = (@. 1.0 - fc.û^2) |> diagonal
+∂activation(fc::FullyConnectedLayer{linear}) =  fc.ûū |> eye
+∂activation(fc::FullyConnectedLayer{ReLU})   =  fc.û  |> diagonal .|> (ûi) -> ûi > 0. ? 1. : 0.
+∂activation(fc::FullyConnectedLayer{softmax})= (fc.û  |> diagonal).- fc.û * (fc.û |> transpose)
 
 
 function backpropagate!(fc::FullyConnectedLayer{T}) where T

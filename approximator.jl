@@ -22,8 +22,8 @@ wₕ, bₕ, wₒ, bₒ = subviews(wb,
   (output_neurons, hidden_neurons), (output_neurons,1));
 
 include("nn.jl")
-hidden = FullyConnectedLayer{_tanh}(wₕ, bₕ, ∂wₕ, ∂bₕ)
-output = FullyConnectedLayer{_linear}(wₒ, bₒ, ∂wₒ, ∂bₒ)
+hidden = FullyConnectedLayer{tanh}(wₕ, bₕ, ∂wₕ, ∂bₕ)
+output = FullyConnectedLayer{linear}(wₒ, bₒ, ∂wₒ, ∂bₒ)
 nn = NeuralNetwork{mean_squared_loss}(hidden, output)
 wₕ .= randn(hidden_neurons, input_neurons)
 wₒ .= randn(output_neurons, hidden_neurons)

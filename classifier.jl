@@ -23,8 +23,8 @@ wₕ, bₕ, wₒ, bₒ = subviews(wb,
   (output_neurons, hidden_neurons), (output_neurons,1));
 
 include("nn.jl")
-hidden = FullyConnectedLayer{_ReLU}(wₕ, bₕ, ∂wₕ, ∂bₕ)
-output = FullyConnectedLayer{_softmax}(wₒ, bₒ, ∂wₒ, ∂bₒ)
+hidden = FullyConnectedLayer{ReLU}(wₕ, bₕ, ∂wₕ, ∂bₕ)
+output = FullyConnectedLayer{softmax}(wₒ, bₒ, ∂wₒ, ∂bₒ)
 nn = NeuralNetwork{cross_entropy_loss}(hidden, output)
 wₕ .= randn(hidden_neurons, input_neurons)
 wₒ .= randn(output_neurons, hidden_neurons)
