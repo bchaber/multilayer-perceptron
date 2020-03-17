@@ -73,11 +73,11 @@ activation(fc::FullyConnectedLayer{linear}) =  fc.ū
 activation(fc::FullyConnectedLayer{ReLU})   = (@. max(0, fc.ū))
 activation(fc::FullyConnectedLayer{softmax})=  exp.(fc.ū) ./ sum(exp.(fc.ū))
 
-eye(v::Matrix{Float}) = Matrix(1.0I, size(v))
+eye(n::Integer) = Matrix(1.0I, n, n)
 diagonal(v::Matrix{Float}) = diagm(0 => vec(v))
 ∂activation(fc::FullyConnectedLayer{sigmoid})= (@. fc.û * (1.0 - fc.û)) |> diagonal
 ∂activation(fc::FullyConnectedLayer{tanh})   = (@. 1.0 - fc.û^2) |> diagonal
-∂activation(fc::FullyConnectedLayer{linear}) =  fc.ûū |> eye
+∂activation(fc::FullyConnectedLayer{linear}) =  fc.û |> length   |> eye
 ∂activation(fc::FullyConnectedLayer{ReLU})   =  fc.û |> diagonal .|> (ûi) -> ûi > 0. ? 1. : 0.
 ∂activation(fc::FullyConnectedLayer{softmax})= (fc.û |> diagonal).- fc.û * (fc.û |> transpose)
 
