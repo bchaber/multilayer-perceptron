@@ -2,7 +2,7 @@ import Random: shuffle, seed!
 seed!(0)
 
 η = 0.001 # learning rate
-epochs = 500
+epochs = 900
 
 batch_size     = 1
 input_neurons  = 4
