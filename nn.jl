@@ -2,6 +2,7 @@ import LinearAlgebra: diagm
 Float = Float64
 abstract type Layer end
 abstract type ActivationFunction end
+abstract type swish   <: ActivationFunction end
 abstract type sigmoid <: ActivationFunction end
 abstract type softmax <: ActivationFunction end
 abstract type linear  <: ActivationFunction end

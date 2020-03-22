@@ -34,6 +34,7 @@ function backpropagate!(fc::FullyConnectedLayer{T}) where T
   fc.ûū .= ∂activation(fc)
 end
 
+activation(fc::FullyConnectedLayer{swish})  = (@. fc.ū/ (1.0 + exp(-1.0fc.ū)))
 activation(fc::FullyConnectedLayer{sigmoid})= (@. 1.0 / (1.0 + exp(-1.0fc.ū)))
 activation(fc::FullyConnectedLayer{tanh})   = (@. 2.0 / (1.0 + exp(-2.0fc.ū)) - 1.0)
 activation(fc::FullyConnectedLayer{linear}) =  fc.ū
@@ -42,6 +43,7 @@ activation(fc::FullyConnectedLayer{softmax})=  exp.(fc.ū) ./ sum(exp.(fc.ū))
 
 eye(n::Integer) = Matrix(1.0I, n, n)
 diagonal(v::Matrix{Float}) = diagm(0 => vec(v))
+∂activation(fc::FullyConnectedLayer{swish})  = (@. fc.û + fc.û*(1.0 - fc.û)/fc.ū) |> diagonal
 ∂activation(fc::FullyConnectedLayer{sigmoid})= (@. fc.û * (1.0 - fc.û)) |> diagonal
 ∂activation(fc::FullyConnectedLayer{tanh})   = (@. 1.0 - fc.û^2) |> diagonal
 ∂activation(fc::FullyConnectedLayer{linear}) =  fc.û |> length   |> eye
