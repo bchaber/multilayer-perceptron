@@ -33,7 +33,7 @@ partials(x::Dual) = x.dv;
 ε = Dual(0., 1.)
 
 D = derivative(f, x) = partials(f(Dual(x, one(x))))
-J = function jacobian(f, args::Vector{T}) where {T <:Number}
+J = function jacobian(f, args::AbstractVector{T}) where {T <:Number}
     jacobian_columns = Matrix{T}[]
     for i=1:length(args)
         x = Dual{T}[]
@@ -48,7 +48,7 @@ J = function jacobian(f, args::Vector{T}) where {T <:Number}
     end
     hcat(jacobian_columns...)
 end
-H = function hessian(f, args::Vector)
-    ∇f(x::Vector) = J(f, x)
+H = function hessian(f, args::AbstractVector)
+    ∇f(x::AbstractVector) = J(f, x)
     J(∇f, args)
 end
