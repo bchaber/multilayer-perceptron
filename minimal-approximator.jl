@@ -2,6 +2,7 @@ import Random: shuffle, shuffle!, seed!
 seed!(0)
 
 include("dual.jl")
+include("subviews.jl")
 mean_squared_loss(y, ŷ) = sum(0.5(y - ŷ).^2)
 dense(w, b, n::Integer, m::Integer, v, activation::Function) = 
   activation(reshape(w, n, m) * v .+ reshape(b, n, 1))
@@ -14,8 +15,15 @@ softmax(x) = exp.(x) ./ sum(exp.(x))
 input_neurons  = 2
 hidden_neurons = 10
 output_neurons = 1
-wh, bh = randn(hidden_neurons* input_neurons), zeros(hidden_neurons)
-wo, bo = randn(output_neurons*hidden_neurons), zeros(output_neurons)
+
+parameters = zeros(hidden_neurons*input_neurons  + hidden_neurons +
+                   output_neurons*hidden_neurons + output_neurons)
+wh, _, wo, _ = subviews(parameters,
+  (hidden_neurons*input_neurons), (hidden_neurons),
+  (output_neurons*hidden_neurons),(output_neurons))
+wh .= randn(hidden_neurons*input_neurons)
+wo .= randn(output_neurons*hidden_neurons)
+
 η = 0.1
 epochs = 5000
 batch_size = 1
@@ -42,7 +50,10 @@ dloss_bh(x, y, wh, bh, wo, bo) = vec(J(b -> loss(x, y, wh, b,  wo, bo), bh));
 dloss_wo(x, y, wh, bh, wo, bo) = vec(J(w -> loss(x, y, wh, bh, w,  bo), wo));
 dloss_bo(x, y, wh, bh, wo, bo) = vec(J(b -> loss(x, y, wh, bh, wo, b),  bo));
 
-function test(wh, bh, wo, bo, test_set)
+function test(parameters, test_set)
+  wh, bh, wo, bo = subviews(parameters,
+    (hidden_neurons*input_neurons), (hidden_neurons),
+    (output_neurons*hidden_neurons),(output_neurons))
   Et  = zero(0.)
   for j = test_set
     x   = reshape( inputs[j,:], :, 1)
@@ -53,34 +64,29 @@ function test(wh, bh, wo, bo, test_set)
   return Et/length(test_set)
 end
 
-function train(wh, bh, wo, bo, train_set)
-  ∇Ewh = zeros(length(wh))
-  ∇Ebh = zeros(length(bh))
-  ∇Ewo = zeros(length(wo))
-  ∇Ebo = zeros(length(bo))
+function train(parameters, train_set)
+  wh, bh, wo, bo = subviews(parameters,
+    (hidden_neurons*input_neurons), (hidden_neurons),
+    (output_neurons*hidden_neurons),(output_neurons))
+  ∇E = zeros(length(parameters))
   for j = train_set
     x   = reshape( inputs[j,:], :, 1)
     y   = reshape(targets[j,:], :, 1)
     ŷ   = net(x, wh, bh, wo, bo)
 
-    ∇Ewh += dloss_wh(x, y, wh, bh, wo, bo)
-    ∇Ebh += dloss_bh(x, y, wh, bh, wo, bo)
-    ∇Ewo += dloss_wo(x, y, wh, bh, wo, bo)
-    ∇Ebo += dloss_bo(x, y, wh, bh, wo, bo)
+    Ewh = dloss_wh(x, y, wh, bh, wo, bo)
+    Ebh = dloss_bh(x, y, wh, bh, wo, bo)
+    Ewo = dloss_wo(x, y, wh, bh, wo, bo)
+    Ebo = dloss_bo(x, y, wh, bh, wo, bo)
+    ∇E.+= vcat(Ewh, Ebh, Ewo, Ebo)
   end
-  return ∇Ewh/length(train_set),
-         ∇Ebh/length(train_set),
-         ∇Ewo/length(train_set),
-         ∇Ebo/length(train_set)
+  return ∇E/length(train_set)
 end
 
 for i=1:epochs
   shuffle!(train_set)
-  ∇Ewh, ∇Ebh, ∇Ewo, ∇Ebo = train(wh, bh, wo, bo, train_set[1:batch_size])
-  wh .-= η*∇Ewh
-  bh .-= η*∇Ebh
-  wo .-= η*∇Ewo
-  bo .-= η*∇Ebo
-  println(i, "\t", test(wh, bh, wo, bo, test_set))
+  ∇E = train(parameters, train_set[1:batch_size])
+  parameters .-= η*∇E
+  println(i, "\t", test(parameters, test_set))
 end
-println("FINAL", "\t", test(wh, bh, wo, bo, 1:data_size))
+println("FINAL", "\t", test(parameters, 1:data_size))
