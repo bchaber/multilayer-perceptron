@@ -3,6 +3,7 @@ seed!(0)
 
 include("dual.jl")
 include("subviews.jl")
+include("optimizers.jl")
 cross_entropy_loss(y, ŷ) = sum(-y .* log.(ŷ))
 dense(w, b, n::Integer, m::Integer, v, activation::Function) = 
   activation(reshape(w, n, m) * v .+ reshape(b, n, 1))
@@ -27,6 +28,8 @@ wo .= randn(output_neurons*hidden_neurons)
 η = 0.001
 epochs = 900
 batch_size = 1
+
+optimizer = GradientDescent(η)
 
 function net(x, wh, bh, wo, bo)
     x̂ = dense(wh, bh, hidden_neurons,  input_neurons, x, swish)
@@ -83,10 +86,15 @@ function train(parameters, train_set)
   return ∇E/length(train_set)
 end
 
+function optimize!(parameters)
+  parameters .= step!(optimizer,
+    p -> test(p, test_set), p -> train(p, train_set[1:batch_size]),
+    parameters)
+end
+
 for i=1:epochs
   shuffle!(train_set)
-  ∇E = train(parameters, train_set[1:batch_size])
-  parameters .-= η*∇E
+  optimize!(parameters)
   println(i, "\t", test(parameters, test_set))
 end
 println("FINAL", "\t", test(parameters, 1:data_size))
