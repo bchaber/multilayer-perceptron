@@ -114,7 +114,7 @@ function backward(x::Variable, grad)
 end
 
 function backward(x::Tensor, grad)
-    x.grad[:] .+= grad[:]
+    x.grad .+= grad
     nothing
 end
 

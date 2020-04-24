@@ -41,10 +41,10 @@ end
 fs =  8
 cs = 10
 
-parameters = zeros(fs*3*3  + cs*13*13*fs + cs)
-wh, wo, bo = subviews(parameters, (fs*3*3), (cs*13*13*fs), (cs))
-wh .= randn(fs*3*3) ./ 9 # to reduce variance
-wo .= randn(cs*13*13*fs) ./ (fs*13*13) # to reduce variance
+parameters = zeros(3*3*fs  + cs*13*13*fs + cs)
+wh, wo, bo = subviews(parameters, (3, 3, fs), (cs, 13*13*fs), (cs))
+wh .= randn(3, 3, fs) ./ 9 # to reduce variance
+wo .= randn(cs, 13*13*fs) ./ (13*13*fs) # to reduce variance
 
 η = 0.01
 
@@ -53,7 +53,7 @@ optimizer = GradientDescent(η)
 function net(x, wh, wo, bo)
     x̄ = conv(wh, x, 28, 28)
     x̂ = maxpool(x̄)
-    ŷ = dense(wo, bo, cs, fs*13*13, x̂, softmax)
+    ŷ = dense(wo, bo, cs, 13*13*fs, x̂, softmax)
 end
 
 function loss(x, y, wh, wo, bo)
@@ -76,7 +76,7 @@ function dloss(x, y, wh, wo, bo)
 end
 
 function test(parameters, test_set)
-  wh, wo, bo = subviews(parameters, (fs*3*3), (cs*13*13*fs), (cs))
+  wh, wo, bo = subviews(parameters, (3, 3, fs), (cs, 13*13*fs), (cs))
   Et  = zero(0.)
   for j = test_set
     x   = reshape( inputs[j,:], :, 1)
@@ -88,11 +88,11 @@ function test(parameters, test_set)
 end
 
 function train(parameters, train_set)
-  wh, wo, bo = subviews(parameters, (fs*3*3), (cs*13*13*fs), (cs))
+  wh, wo, bo = subviews(parameters, (3, 3, fs), (cs, 13*13*fs), (cs))
   ∇E = zeros(length(parameters))
   for j = train_set
-    x   = reshape( inputs[j,:], :, 1)
-    y   = reshape(targets[j,:], :, 1)
+    x   = reshape( inputs[j,:], 28, 28)
+    y   = reshape(targets[j,:], 10, 1)
     ŷ   = net(x, wh, wo, bo)
 
     Ewh, Ewo, Ebo = dloss(x, y, wh, wo, bo)
