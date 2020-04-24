@@ -38,7 +38,7 @@ function maxpool(input)
     output
 end
 
-fs =  8
+fs = 32
 cs = 10
 
 parameters = zeros(3*3*fs  + cs*13*13*fs + cs)
@@ -46,9 +46,11 @@ wh, wo, bo = subviews(parameters, (3, 3, fs), (cs, 13*13*fs), (cs))
 wh .= randn(3, 3, fs) ./ 9 # to reduce variance
 wo .= randn(cs, 13*13*fs) ./ (13*13*fs) # to reduce variance
 
-η = 0.01
-
-optimizer = GradientDescent(η)
+η = 0.1
+ε = 1e-9
+epochs = 30
+batch_size = 128
+optimizer = Adagrad(η, ε, length(parameters))
 
 function net(x, wh, wo, bo)
     x̄ = conv(wh, x, 28, 28)
@@ -62,8 +64,11 @@ function loss(x, y, wh, wo, bo)
 end
 
 include("datasets/mnist.jl")
-train_set  =  1:10
-test_set   = 11:20
+test_size  = 100
+train_size = 1280
+data_size  = train_size + test_size
+train_set  = shuffle(1:data_size)[1:train_size]
+test_set   = setdiff(1:data_size, train_set)
 
 function dloss(x, y, wh, wo, bo)
     x, y = Variable(x), Variable(y)
@@ -104,13 +109,13 @@ end
 
 function optimize!(parameters)
   parameters .= step!(optimizer,
-    p -> test(p, test_set), p -> train(p, train_set),
+    p -> test(p, test_set), p -> train(p, train_set[1:batch_size]),
     parameters)
 end
 
-
-for i=1:10
+for i=1:epochs
+  shuffle!(train_set)
   optimize!(parameters)
-  println(i, "\t", test(parameters, test_set)); flush(stdout);
+  println(i, "\t", test(parameters, train_set)); flush(stdout);
 end
 println("FINAL", "\t", test(parameters, train_set))
