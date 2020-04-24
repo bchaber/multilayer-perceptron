@@ -62,8 +62,8 @@ function loss(x, y, wh, wo, bo)
 end
 
 include("datasets/mnist.jl")
-train_set  = [1]
-test_set   = [1]
+train_set  =  1:10
+test_set   = 11:20
 
 function dloss(x, y, wh, wo, bo)
     x, y = Variable(x), Variable(y)
@@ -79,8 +79,8 @@ function test(parameters, test_set)
   wh, wo, bo = subviews(parameters, (3, 3, fs), (cs, 13*13*fs), (cs))
   Et  = zero(0.)
   for j = test_set
-    x   = reshape( inputs[j,:], :, 1)
-    y   = reshape(targets[j,:], :, 1)
+    x   = inputs[:,:,j]
+    y   = targets[:,j,:]
 
     Et += loss(x, y, wh, wo, bo)
   end
@@ -91,8 +91,8 @@ function train(parameters, train_set)
   wh, wo, bo = subviews(parameters, (3, 3, fs), (cs, 13*13*fs), (cs))
   ∇E = zeros(length(parameters))
   for j = train_set
-    x   = reshape( inputs[j,:], 28, 28)
-    y   = reshape(targets[j,:], 10, 1)
+    x   = inputs[:,:,j]
+    y   = targets[:,j,:]
     ŷ   = net(x, wh, wo, bo)
 
     Ewh, Ewo, Ebo = dloss(x, y, wh, wo, bo)
@@ -108,10 +108,8 @@ function optimize!(parameters)
     parameters)
 end
 
-inputs = reshape(img, 1, :)
-targets = Float64[1 0 0 0 0 0 0 0 0 0];
 
-for i=1:100
+for i=1:10
   optimize!(parameters)
   println(i, "\t", test(parameters, test_set)); flush(stdout);
 end
